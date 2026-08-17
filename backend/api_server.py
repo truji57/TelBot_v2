@@ -60,6 +60,19 @@ def register_listener(notify_fn):
     _listener = notify_fn
 
 
+def get_version():
+    """Lee la última versión desde backend/changelog.json."""
+    cl_path = BASE_DIR / "backend" / "changelog.json"
+    try:
+        with open(cl_path, encoding="utf-8") as f:
+            entries = json.load(f)
+        if entries:
+            return {"version": entries[0].get("version", "v0.0"), "date": entries[0].get("date", "")}
+    except Exception:
+        pass
+    return {"version": "v0.0", "date": ""}
+
+
 def notify_frontend(event_type: str, data: dict):
     """Envía un evento al frontend vía REST (polling)."""
     global state
@@ -120,6 +133,8 @@ class APIHandler(BaseHTTPRequestHandler):
                 self._json({"error": "Error interno"}, 500)
         elif self.path == "/api/config":
             self._json(get_config())
+        elif self.path == "/api/version":
+            self._json(get_version())
         elif self.path == "/ws":
             self._json({"error": "Use WebSocket, not HTTP"}, 426)
         else:

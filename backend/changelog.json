@@ -1,7 +1,7 @@
 [
   {
-    "version": "v1.0",
+    "version": "v2.24",
     "date": "2026-08-17",
-    "description": "Initial release: Telegram signal listener, MT5 connector/worker, risk manager, config panel, local signal parser, React dashboard y updater"
+    "description": "Versión actual del bot: listener de Telegram, conector/worker MT5, gestor de riesgo, panel de configuración, parser de señales local y dashboard React"
   }
 ]
