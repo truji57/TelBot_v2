@@ -95,6 +95,16 @@ def notify_frontend(event_type: str, data: dict):
 
 
 class APIHandler(BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        # Silenciar logs de peticiones HTTP (el polling del frontend los genera
+        # cada 2s y tapan prompts de consola como el código de Telegram).
+        try:
+            code = int(args[1]) if len(args) > 1 and str(args[1]).isdigit() else 0
+        except Exception:
+            code = 0
+        if code >= 400:
+            super().log_message(format, *args)
+
     def _json(self, data, status=200):
         body = json.dumps(data).encode()
         self.send_response(status)

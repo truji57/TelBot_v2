@@ -1,5 +1,10 @@
 [
   {
+    "version": "v2.25",
+    "date": "2026-08-17",
+    "description": "Silenciar logs HTTP del polling del frontend para que no tapen el prompt de codigo de Telegram al iniciar en otro equipo"
+  },
+  {
     "version": "v2.24",
     "date": "2026-08-17",
     "description": "Versión actual del bot: listener de Telegram, conector/worker MT5, gestor de riesgo, panel de configuración, parser de señales local y dashboard React"
