@@ -1,0 +1,43 @@
+# Variables de entorno sensibles — NUNCA subir
+.env
+*.session
+*.session-journal
+
+# Logs
+logs/
+*.log
+
+# Node / Frontend
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# VS Code
+.vscode/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Archivos generados por el bot
+processed_messages.csv
+last_processed_id.txt
+.update_cache
+
+# Configuración con credenciales
+data/config.json
+
+# Archivos personales de desarrollo (no necesarios para ejecutar el bot)
+NO NECESARIO 2/
+Para mandar/
+CLAUDE.md
+PENDIENTES.md
+instalar.bat
+instalar_TelBot.bat
+opencode.json
