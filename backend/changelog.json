@@ -1,5 +1,10 @@
 [
   {
+    "version": "v2.26",
+    "date": "2026-08-17",
+    "description": "Quitar los IDs reales de canales del formulario de configuracion (debajo de los combos y placeholder del modal) y usar un ejemplo de ID de canal random"
+  },
+  {
     "version": "v2.25",
     "date": "2026-08-17",
     "description": "Silenciar logs HTTP del polling del frontend para que no tapen el prompt de codigo de Telegram al iniciar en otro equipo"

@@ -156,7 +156,6 @@ export default function Settings() {
 
   const channelCombo = (label: string, value: string, onChange: (v: string) => void, desc?: string) => {
     const channels = g.saved_channels || []
-    const selected = channels.find((ch) => ch.id === value)
     const empty = !value
     return (
       <div>
@@ -171,8 +170,7 @@ export default function Settings() {
             <option key={i} value={ch.id}>{ch.name}</option>
           ))}
         </select>
-        {selected && <p className="text-[10px] text-gray-500 mt-0.5 font-mono break-all">{selected.id}</p>}
-        {!selected && value && <p className="text-[10px] text-gray-500 mt-0.5 font-mono break-all">{value}</p>}
+        <p className="text-[10px] text-gray-500 mt-0.5 font-mono break-all">ej: -1001234567890</p>
         {desc && <p className="text-[10px] text-gray-500 mt-0.5">{desc}</p>}
       </div>
     )
@@ -302,12 +300,7 @@ export default function Settings() {
                 {testingForward ? '...' : 'Test'}
               </button>
             </div>
-            {(() => {
-              const sel = (g.saved_channels || []).find((ch) => ch.id === g.forward_chat_id)
-              if (sel) return <p className="text-[10px] text-gray-500 mt-0.5 font-mono break-all">{sel.id}</p>
-              if (g.forward_chat_id) return <p className="text-[10px] text-gray-500 mt-0.5 font-mono break-all">{g.forward_chat_id}</p>
-              return null
-            })()}
+            <p className="text-[10px] text-gray-500 mt-0.5 font-mono break-all">ej: -1001234567890</p>
             <p className="text-[10px] text-gray-500 mt-0.5">Donde se reenvian resumenes</p>
           </div>
         </div>
@@ -459,7 +452,7 @@ export default function Settings() {
 
             <div className="flex gap-2 mb-4">
               <input type="text" value={chModalId} onChange={(e) => setChModalId(e.target.value)}
-                placeholder="ID (ej: -1003954414414)" className="input flex-[2] font-mono" />
+                placeholder="ID (ej: -1001234567890)" className="input flex-[2] font-mono" />
               <input type="text" value={chModalName} onChange={(e) => setChModalName(e.target.value)}
                 placeholder="Nombre" className="input flex-1" />
               <button
