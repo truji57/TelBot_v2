@@ -1,5 +1,10 @@
 [
   {
+    "version": "v2.28",
+    "date": "2026-08-17",
+    "description": "Fix P&L diario: mover el calculo del P&L de /status a un hilo de fondo (evita bloquear el arranque) y ampliar el limite superior de history_deals_get hacia el futuro para cubrir la zona horaria del servidor del broker (MetaQuotes-Demo = UTC+3)"
+  },
+  {
     "version": "v2.27",
     "date": "2026-08-17",
     "description": "Fix P&L diario: rango de history_deals_get con margen por zona horaria del broker y filtrado por fecha local, plus warmup del historico al conectar MT5"

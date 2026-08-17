@@ -157,17 +157,61 @@ def init_mt5(acc: dict) -> bool:
         mt5.shutdown()
         return False
     logger.info(f"Conectado a MT5: login={login_val} server={acc.get('server')}")
-
-    # Calentar la cache de historico: la primera llamada a history_deals_get
-    # en una sesion nueva suele devolver None hasta que se sincroniza.
-    import datetime as _wdt
-    try:
-        _warmup_from = _wdt.datetime.now() - _wdt.timedelta(days=3)
-        mt5.history_deals_get(_warmup_from, _wdt.datetime.now())
-    except Exception as _we:
-        logger.warning(f"Warmup historico fallo: {_we}")
-
     return True
+
+
+def _compute_daily_pnl():
+    """Calcula el P&L realizado de hoy (hora local) desde el historico de deals."""
+    import datetime as _dt
+    try:
+        now = _dt.datetime.now()
+        day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        # El historico de MT5 se sincroniza unos segundos tras conectar;
+        # pedimos un rango amplio y si no hay datos ampliamos a 30 dias.
+        # Nota: MT5 interpreta las fechas del rango en la zona horaria del
+        # servidor del broker (p.ej. MetaQuotes-Demo = UTC+3), que suele ir
+        # por delante de la hora local; por eso el limite superior va con
+        # margen hacia el futuro para no dejar fuera los deals de hoy.
+        deals = None
+        try:
+            deals = mt5.history_deals_get(day_start - _dt.timedelta(days=3), now + _dt.timedelta(days=1))
+        except Exception:
+            deals = None
+
+        if not deals:
+            try:
+                deals = mt5.history_deals_get(day_start - _dt.timedelta(days=30), now + _dt.timedelta(days=1))
+            except Exception:
+                deals = None
+
+        today_profit = 0.0
+        today_deals = 0
+        if deals is None:
+            logger.warning(f"history_deals_get devolvio None: {mt5.last_error()}")
+        elif deals:
+            for deal in deals:
+                t = getattr(deal, "time", 0) or 0
+                if t:
+                    d_local = _dt.datetime.fromtimestamp(t)
+                    if d_local.date() == _dt.date.today():
+                        today_deals += 1
+                        today_profit += getattr(deal, "profit", 0) or 0
+
+        worker_state["daily_pnl"] = round(today_profit, 2)
+        logger.info(f"[PNL] deals_hoy={today_deals} pnl_hoy={worker_state['daily_pnl']:.2f} (total={len(deals) if deals else 0})")
+    except Exception as e:
+        logger.warning(f"Error calculando P&L diario: {e}")
+
+
+def _daily_pnl_loop(stop_event):
+    """Hilo de fondo: recalcula el P&L diario periodicamente sin bloquear /status."""
+    # Pequeña espera inicial para que el primer /status del listener responda rápido
+    stop_event.wait(3)
+    while not stop_event.is_set():
+        with _mt5_lock:
+            _compute_daily_pnl()
+        stop_event.wait(5)
 
 
 def _get_filling_mode(symbol: str) -> int:
@@ -267,29 +311,12 @@ class WorkerHandler(BaseHTTPRequestHandler):
                                 "sl": o.sl or 0, "tp": o.tp or 0,
                             })
 
-                    # Tracking P&L diario (desde historico de deals del dia)
+                    # P&L diario ya lo calcula el hilo de fondo _daily_pnl_loop
                     today = datetime.now().strftime("%Y-%m-%d")
                     if worker_state["date"] != today:
                         worker_state["daily_pnl"] = 0.0
                         worker_state["paused"] = False
                         worker_state["date"] = today
-
-                    import datetime as _dt
-                    now = _dt.datetime.now()
-                    day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-                    # Margen de 1 dia para cubrir la diferencia de zona horaria del broker:
-                    # MT5 interpreta el rango en hora del servidor, no en hora local.
-                    deals = mt5.history_deals_get(day_start - _dt.timedelta(days=1), now)
-                    today_profit = 0.0
-                    if deals is None:
-                        logger.warning(f"history_deals_get devolvio None: {mt5.last_error()}")
-                    elif deals:
-                        for deal in deals:
-                            # Filtrar deals del dia actual en hora local
-                            d_local = _dt.datetime.fromtimestamp(deal.time)
-                            if d_local.date() == _dt.date.today():
-                                today_profit += getattr(deal, 'profit', 0) or 0
-                    worker_state["daily_pnl"] = round(today_profit, 2)
 
                     # Auto-pausa por limites
                     if not worker_state["paused"]:
@@ -552,6 +579,10 @@ def main():
 
     logger.info(f"Worker '{_account_name}' iniciado en puerto {args.port}")
 
+    # Hilo de fondo: recalculando el P&L diario sin bloquear /status
+    _stop = threading.Event()
+    threading.Thread(target=_daily_pnl_loop, args=(_stop,), daemon=True).start()
+
     server = ThreadingHTTPServer(("127.0.0.1", args.port), WorkerHandler)
     print("READY", flush=True)
 
@@ -560,6 +591,7 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
+        _stop.set()
         mt5.shutdown()
         logger.info("Worker finalizado")
 
