@@ -1,5 +1,10 @@
 [
   {
+    "version": "v2.27",
+    "date": "2026-08-17",
+    "description": "Fix P&L diario: rango de history_deals_get con margen por zona horaria del broker y filtrado por fecha local, plus warmup del historico al conectar MT5"
+  },
+  {
     "version": "v2.26",
     "date": "2026-08-17",
     "description": "Quitar los IDs reales de canales del formulario de configuracion (debajo de los combos y placeholder del modal) y usar un ejemplo de ID de canal random"

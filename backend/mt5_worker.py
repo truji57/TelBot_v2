@@ -157,6 +157,16 @@ def init_mt5(acc: dict) -> bool:
         mt5.shutdown()
         return False
     logger.info(f"Conectado a MT5: login={login_val} server={acc.get('server')}")
+
+    # Calentar la cache de historico: la primera llamada a history_deals_get
+    # en una sesion nueva suele devolver None hasta que se sincroniza.
+    import datetime as _wdt
+    try:
+        _warmup_from = _wdt.datetime.now() - _wdt.timedelta(days=3)
+        mt5.history_deals_get(_warmup_from, _wdt.datetime.now())
+    except Exception as _we:
+        logger.warning(f"Warmup historico fallo: {_we}")
+
     return True
 
 
@@ -265,14 +275,20 @@ class WorkerHandler(BaseHTTPRequestHandler):
                         worker_state["date"] = today
 
                     import datetime as _dt
-                    day_start = _dt.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-                    deals = mt5.history_deals_get(day_start, _dt.datetime.now())
+                    now = _dt.datetime.now()
+                    day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                    # Margen de 1 dia para cubrir la diferencia de zona horaria del broker:
+                    # MT5 interpreta el rango en hora del servidor, no en hora local.
+                    deals = mt5.history_deals_get(day_start - _dt.timedelta(days=1), now)
                     today_profit = 0.0
                     if deals is None:
                         logger.warning(f"history_deals_get devolvio None: {mt5.last_error()}")
                     elif deals:
                         for deal in deals:
-                            today_profit += getattr(deal, 'profit', 0) or 0
+                            # Filtrar deals del dia actual en hora local
+                            d_local = _dt.datetime.fromtimestamp(deal.time)
+                            if d_local.date() == _dt.date.today():
+                                today_profit += getattr(deal, 'profit', 0) or 0
                     worker_state["daily_pnl"] = round(today_profit, 2)
 
                     # Auto-pausa por limites
